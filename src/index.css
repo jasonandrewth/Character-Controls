@@ -1,0 +1,37 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+canvas {
+  display: block;
+}
+body {
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+}
+body .dg.ac {
+  z-index: 10;
+}
+
+body .window {
+  min-width: 0;
+  min-height: 0;
+}
+
+.zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 35vh;
+
+  z-index: 9999;
+
+  @media only screen and (min-width: 1224px) {
+    /* Styles */
+    display: none;
+    position: relative;
+  }
+}

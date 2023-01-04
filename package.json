@@ -17,6 +17,7 @@
     "@types/stats.js": "^0.17.0",
     "@types/three": "^0.143.2",
     "lil-gui": "^0.17.0",
+    "nipplejs": "^0.10.0",
     "stats.js": "^0.17.0",
     "three": "^0.143.0"
   }
