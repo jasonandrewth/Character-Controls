@@ -33,7 +33,7 @@ body .window {
 
 .loading-bar.ended {
   transform: scaleX(0);
-  transform-origin: 100% 0;
+  /* transform-origin: 100% 0; */
   transition: transform 1.5s ease-in-out;
 }
 

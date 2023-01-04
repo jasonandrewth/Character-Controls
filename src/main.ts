@@ -46,10 +46,20 @@ const joystickZone = document.querySelector(".zone");
 const loadingManager = new THREE.LoadingManager(
   // Loaded
   () => {
+    window.setTimeout(() => {
+      const interval = setInterval(decreaseAlpha, 30); //Call increaseMyVar every 30ms
+
+      if (loadingBarElement) {
+        // loadingBarElement.style.opacity = "0";
+        loadingBarElement.classList.add("ended");
+        loadingBarElement.style.transform = "";
+      }
+    }, 500);
+
     console.log("loaded");
     console.log(overlayMaterial.uniforms.uAlpha);
 
-    const interval = setInterval(decreaseAlpha, 30); //Call increaseMyVar every 30ms
+    const interval = setInterval(decreaseAlpha, 60); //Call increaseMyVar every 30ms
 
     function decreaseAlpha() {
       console.log("called");
@@ -61,10 +71,6 @@ const loadingManager = new THREE.LoadingManager(
       }
 
       return;
-    }
-
-    if (loadingBarElement) {
-      loadingBarElement.style.opacity = "0";
     }
   },
 
