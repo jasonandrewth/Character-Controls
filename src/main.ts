@@ -6,6 +6,13 @@ import "./index.css";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import nipplejs from "nipplejs";
+
+// load shaders
+//@ts-ignore
+import overlayVertexShader from "./GLSL/Overlay/overlay.v.glsl?raw";
+//@ts-ignore
+import overlayFragmentShader from "./GLSL/Overlay/overlay.f.glsl?raw";
+
 /*******************************************************************************
  * Main Code
  ******************************************************************************/
@@ -22,14 +29,65 @@ const sizes = {
   height: window.innerHeight,
 };
 
+/**
+ * DOM ELEMENTS
+ */
 // Canvas
 const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
+//Loading Bar
+const loadingBarElement: HTMLDivElement | null =
+  document.querySelector(".loading-bar");
+//Joystick
+const joystickZone = document.querySelector(".zone");
+
+/**
+ * Loaders
+ */
+const loadingManager = new THREE.LoadingManager(
+  // Loaded
+  () => {
+    console.log("loaded");
+    console.log(overlayMaterial.uniforms.uAlpha);
+
+    const interval = setInterval(decreaseAlpha, 30); //Call increaseMyVar every 30ms
+
+    function decreaseAlpha() {
+      console.log("called");
+      if (overlayMaterial.uniforms.uAlpha.value > 0) {
+        overlayMaterial.uniforms.uAlpha.value =
+          overlayMaterial.uniforms.uAlpha.value - 0.1;
+      } else {
+        clearInterval(interval);
+      }
+
+      return;
+    }
+
+    if (loadingBarElement) {
+      loadingBarElement.style.opacity = "0";
+    }
+  },
+
+  // Progress
+  (itemUrl, itemsLoaded, itemsTotal) => {
+    const progressRatio = itemsLoaded / itemsTotal;
+    console.log(progressRatio);
+
+    if (loadingBarElement) {
+      loadingBarElement.style.transform = `scaleX(${progressRatio})`;
+    }
+  }
+);
+
+const textureLoader = new THREE.TextureLoader(loadingManager);
+const cubeTextureLoader = new THREE.CubeTextureLoader(loadingManager);
+const gltfLoader = new GLTFLoader(loadingManager);
 
 // SCENE
 const scene = new THREE.Scene();
 // scene.background = new THREE.Color(0xa8def0);
 
-scene.background = new THREE.CubeTextureLoader().load([
+scene.background = cubeTextureLoader.load([
   "assets/background/Cold_Sunset__Cam_2_Left+X.png",
   "assets/background/Cold_Sunset__Cam_3_Right-X.png",
   "assets/background/Cold_Sunset__Cam_4_Up+Y.png",
@@ -74,16 +132,28 @@ orbitControls.update();
 
 //JOYSTICK
 const joystick = nipplejs.create({
-  zone: document.querySelector(".zone") as HTMLElement,
+  zone: joystickZone as HTMLElement,
   color: "blue",
   multitouch: true,
 });
 
 /**
- * Loaders
+ * Overlay
  */
-const textureLoader = new THREE.TextureLoader();
-const gltfLoader = new GLTFLoader();
+const overlayGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
+
+const overlayMaterial = new THREE.ShaderMaterial({
+  wireframe: false,
+  transparent: true,
+  vertexShader: overlayVertexShader,
+  fragmentShader: overlayFragmentShader,
+  uniforms: {
+    uAlpha: { value: 1 },
+  },
+});
+
+const overlay = new THREE.Mesh(overlayGeometry, overlayMaterial);
+scene.add(overlay);
 
 // LIGHTS
 light();
