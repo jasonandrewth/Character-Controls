@@ -12,6 +12,7 @@ import nipplejs from "nipplejs";
 import overlayVertexShader from "./GLSL/Overlay/overlay.v.glsl?raw";
 //@ts-ignore
 import overlayFragmentShader from "./GLSL/Overlay/overlay.f.glsl?raw";
+import { Object3D } from "three";
 
 /*******************************************************************************
  * Main Code
@@ -40,21 +41,36 @@ const loadingBarElement: HTMLDivElement | null =
 //Joystick
 const joystickZone = document.querySelector(".zone");
 
+//RAYCASTER
+const raycaster = new THREE.Raycaster();
+
+/**
+ * Points
+ */
+const points = [
+  {
+    position: new THREE.Vector3(0, 0, 0),
+    element: document.querySelector(".point-0") as HTMLElement,
+  },
+];
+
+points.forEach((point) => {
+  point.element.addEventListener("click", () => {
+    console.log("CLick");
+  });
+});
+
 /**
  * Loaders
  */
 const loadingManager = new THREE.LoadingManager(
   // Loaded
   () => {
-    window.setTimeout(() => {
-      const interval = setInterval(decreaseAlpha, 30); //Call increaseMyVar every 30ms
-
-      if (loadingBarElement) {
-        // loadingBarElement.style.opacity = "0";
-        loadingBarElement.classList.add("ended");
-        loadingBarElement.style.transform = "";
-      }
-    }, 500);
+    if (loadingBarElement) {
+      // loadingBarElement.style.opacity = "0";
+      loadingBarElement.classList.add("ended");
+      loadingBarElement.style.transform = "";
+    }
 
     console.log("loaded");
     console.log(overlayMaterial.uniforms.uAlpha);
@@ -171,9 +187,10 @@ generateFloor();
  * MODEL WITH ANIMATIONS
  */
 let characterControls: CharacterControls;
+let model: THREE.Group | null = null;
 
 gltfLoader.load("assets/models/Soldier.glb", function (gltf) {
-  const model = gltf.scene;
+  model = gltf.scene;
   model.traverse(function (object: any) {
     if (object.isMesh) object.castShadow = true;
   });
@@ -199,6 +216,21 @@ gltfLoader.load("assets/models/Soldier.glb", function (gltf) {
 });
 
 /**
+ * Objects
+ */
+const geometry = new THREE.BoxGeometry(1, 1, 1, 10, 10, 10);
+
+const material = new THREE.MeshBasicMaterial({
+  color: 0xfffff,
+  wireframe: false,
+});
+
+const cube = new THREE.Mesh(geometry, material);
+
+cube.position.set(4, 0.5, 7);
+scene.add(cube);
+
+/**
  * Key Control
  */
 
@@ -209,7 +241,7 @@ type KeyPressOBJ = {
   key3?: boolean;
 };
 
-const keysPressed: KeyPressOBJ = {};
+const keysPressed: any = {};
 
 document.addEventListener(
   "keydown",
@@ -218,6 +250,7 @@ document.addEventListener(
       characterControls.switchRunToggle();
     } else {
       (keysPressed as any)[event.key.toLowerCase()] = true;
+      console.log(keysPressed["a"]);
     }
   },
   false
@@ -244,6 +277,7 @@ joystick.on("move", function (evt, data) {
       for (const [key, value] of Object.entries(keysPressed)) {
         (keysPressed as any)[key] = false;
       }
+
       (keysPressed as any)["s"] = true;
     }
     if (dirData.angle === "up") {
@@ -331,6 +365,46 @@ const tick = () => {
 
   // Update orbit controls
   orbitControls.update();
+
+  const cubePosition = cube.position.clone();
+  cubePosition.project(camera);
+
+  raycaster.setFromCamera(cubePosition, camera);
+  let intersects;
+
+  if (model !== null) {
+    intersects = raycaster.intersectObjects(model.children, true);
+  }
+
+  // Go through each point
+  for (const point of points) {
+    const pointDomEl = point.element as HTMLElement;
+    // console.log(point)
+
+    //Show point if no intersection
+    if (intersects) {
+      if (intersects.length === 0) {
+        pointDomEl.classList.add("visible");
+      } else {
+        // point.element.classList.remove('visible')
+        const intersectionDistance = intersects[0].distance;
+        const pointDistance = point.position.distanceTo(camera.position);
+
+        if (intersectionDistance < pointDistance) {
+          pointDomEl.classList.remove("visible");
+        } else {
+          pointDomEl.classList.add("visible");
+        }
+      }
+    }
+
+    const translateX = cubePosition.x * sizes.width * 0.5;
+    const translateY = -cubePosition.y * sizes.height * 0.5;
+    pointDomEl.style.transform = `translateX(${translateX}px) translateY(${translateY}px)`;
+    // console.log(translateX)
+
+    // console.log(screenPosition.x)
+  }
 
   // Render
   renderer.render(scene, camera);
